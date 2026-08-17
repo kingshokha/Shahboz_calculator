@@ -295,24 +295,57 @@ label {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
-/* Subtotal box */
+/* Subtotal action row & Square Add button */
+.subtotal-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
 .subtotal-box {
+  flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: var(--primary-light);
   border: 1px solid rgba(59, 130, 246, 0.3);
-  padding: 12px 14px;
+  padding: 0 14px;
+  height: 48px;
   border-radius: var(--radius-md);
   font-size: 0.95rem;
   color: var(--text-main);
-  width: 100%;
   box-sizing: border-box;
 }
 
 .subtotal-box strong {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   color: #60a5fa;
+}
+
+.btn-add-square {
+  background-color: var(--primary);
+  color: #ffffff;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.btn-add-square:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-add-square:active {
+  transform: scale(0.94);
 }
 
 /* Buttons */
@@ -662,44 +695,45 @@ label {
 
 /* Total Summary Footer */
 .total-summary-container {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.total-row {
+.total-row-single {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.total-items-count {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  background: var(--bg-card-subtle);
-  padding: 4px 10px;
-  border-radius: 999px;
+  gap: 10px;
 }
 
 .total-label {
   font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .grand-total {
-  font-size: 2rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-align: right;
   color: #38bdf8;
   line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .grand-total {
+    font-size: 1.25rem;
+  }
 }
 
 /* Modal */

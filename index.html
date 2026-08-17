@@ -63,20 +63,19 @@
             </div>
           </div>
 
-          <!-- Item Subtotal preview -->
-          <div class="subtotal-box">
-            <span>Сумма позиции:</span>
-            <strong id="itemSubtotalDisplay">0 ₽</strong>
+          <!-- Item Subtotal preview & Add Button -->
+          <div class="subtotal-action-row">
+            <div class="subtotal-box">
+              <span>Сумма позиции:</span>
+              <strong id="itemSubtotalDisplay">0 ₽</strong>
+            </div>
+            <button type="submit" id="addToListBtn" class="btn-add-square" title="Добавить в чек" aria-label="Добавить в чек">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
           </div>
-
-          <!-- Submit Button -->
-          <button type="submit" id="addToListBtn" class="btn btn-primary btn-block">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Добавить в чек
-          </button>
         </form>
       </section>
 
@@ -105,11 +104,10 @@
 
         <!-- Grand Total Footer -->
         <div class="total-summary-container">
-          <div class="total-row">
-            <span class="total-items-count" id="totalItemsCount">0 поз.</span>
+          <div class="total-row-single">
             <span class="total-label">ИТОГО К ОПЛАТЕ:</span>
+            <div class="grand-total" id="grandTotalDisplay">0 ₽</div>
           </div>
-          <div class="grand-total" id="grandTotalDisplay">0 ₽</div>
           
           <button id="copyReceiptBtn" class="btn btn-secondary btn-block" style="display: none;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

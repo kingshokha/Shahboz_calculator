@@ -228,7 +228,7 @@ function renderHistory() {
     emptyHistoryState.style.display = 'flex';
     clearHistoryBtn.style.display = 'none';
     copyReceiptBtn.style.display = 'none';
-    totalItemsCount.textContent = '0 поз.';
+    if (totalItemsCount) totalItemsCount.textContent = '0 поз.';
     grandTotalDisplay.textContent = '0 ₽';
     return;
   }
@@ -267,7 +267,7 @@ function renderHistory() {
     historyList.appendChild(li);
   });
 
-  totalItemsCount.textContent = `${grouped.length} тов. (${totalQty} шт.)`;
+  if (totalItemsCount) totalItemsCount.textContent = `${grouped.length} тов. (${totalQty} шт.)`;
   grandTotalDisplay.textContent = formatMoney(grandTotal);
 }
 
