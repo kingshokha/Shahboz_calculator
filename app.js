@@ -20,7 +20,7 @@ const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const copyReceiptBtn = document.getElementById('copyReceiptBtn');
 const catalogCountBadge = document.getElementById('catalogCountBadge');
 
-// Modal Elements
+// Catalog Modal Elements
 const catalogModal = document.getElementById('catalogModal');
 const openCatalogBtn = document.getElementById('openCatalogBtn');
 const quickAddProductBtn = document.getElementById('quickAddProductBtn');
@@ -33,6 +33,14 @@ const saveProductBtnText = document.getElementById('saveProductBtnText');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const catalogProductsList = document.getElementById('catalogProductsList');
 const emptyCatalogState = document.getElementById('emptyCatalogState');
+
+// Product History Modal Elements
+const productHistoryModal = document.getElementById('productHistoryModal');
+const itemHistoryModalTitle = document.getElementById('itemHistoryModalTitle');
+const itemHistoryModalSubtitle = document.getElementById('itemHistoryModalSubtitle');
+const closeProductHistoryBtn = document.getElementById('closeProductHistoryBtn');
+const productHistoryLogsList = document.getElementById('productHistoryLogsList');
+
 const toast = document.getElementById('toast');
 
 // Format Currency
@@ -42,6 +50,15 @@ function formatMoney(amount) {
     currency: 'RUB',
     maximumFractionDigits: 2
   }).format(amount).replace('₽', '').trim() + ' ₽';
+}
+
+// Format Date & Time
+function formatDateTime(isoString) {
+  if (!isoString) return { date: '', time: '' };
+  const d = new Date(isoString);
+  const date = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return { date, time };
 }
 
 // LocalStorage helpers
@@ -82,7 +99,7 @@ function showToast(message) {
 
 // Render Products in Dropdown and Modal
 function renderProducts() {
-  catalogCountBadge.textContent = products.length;
+  if (catalogCountBadge) catalogCountBadge.textContent = products.length;
 
   // Dropdown options
   const currentVal = productSelect.value;
@@ -179,6 +196,30 @@ function updateSubtotal() {
   }
 }
 
+// Group Purchase History by Product (no duplicates)
+function getGroupedHistory() {
+  const groupsMap = new Map();
+  purchaseHistory.forEach(item => {
+    if (!groupsMap.has(item.productId)) {
+      groupsMap.set(item.productId, {
+        productId: item.productId,
+        productName: item.productName,
+        unitPrice: item.unitPrice,
+        totalQty: 0,
+        totalPrice: 0,
+        entriesCount: 0,
+        entries: []
+      });
+    }
+    const group = groupsMap.get(item.productId);
+    group.totalQty += item.qty;
+    group.totalPrice += item.total;
+    group.entriesCount += 1;
+    group.entries.push(item);
+  });
+  return Array.from(groupsMap.values());
+}
+
 // Render Purchase History & Grand Total
 function renderHistory() {
   historyList.innerHTML = '';
@@ -196,23 +237,29 @@ function renderHistory() {
   clearHistoryBtn.style.display = 'inline-flex';
   copyReceiptBtn.style.display = 'inline-flex';
 
+  const grouped = getGroupedHistory();
   let grandTotal = 0;
   let totalQty = 0;
 
-  purchaseHistory.forEach((item, index) => {
-    grandTotal += item.total;
-    totalQty += item.qty;
+  grouped.forEach(item => {
+    grandTotal += item.totalPrice;
+    totalQty += item.totalQty;
 
     const li = document.createElement('li');
-    li.className = 'history-item';
+    li.className = 'history-item clickable';
+    li.title = 'Нажмите, чтобы посмотреть историю добавлений этого товара';
+    li.onclick = () => openProductHistoryModal(item.productId);
     li.innerHTML = `
       <div class="item-info">
-        <span class="item-title">${escapeHtml(item.productName)}</span>
-        <span class="item-calc-details">${formatMoney(item.unitPrice)} × ${item.qty} = <strong>${formatMoney(item.total)}</strong></span>
+        <div class="item-title-row">
+          <span class="item-title">${escapeHtml(item.productName)}</span>
+          ${item.entriesCount > 1 ? `<span class="badge-count">${item.entriesCount} доб.</span>` : ''}
+        </div>
+        <span class="item-calc-details">${formatMoney(item.unitPrice)} × ${item.totalQty} шт.</span>
       </div>
       <div class="item-actions-group">
-        <span class="item-total-price">${formatMoney(item.total)}</span>
-        <button class="btn-icon-delete" title="Удалить из чека" onclick="removeFromHistory(${index})">
+        <span class="item-total-price">${formatMoney(item.totalPrice)}</span>
+        <button class="btn-icon-delete" title="Удалить из чека" onclick="event.stopPropagation(); removeGroupFromHistory('${item.productId}')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -223,9 +270,89 @@ function renderHistory() {
     historyList.appendChild(li);
   });
 
-  totalItemsCount.textContent = `${purchaseHistory.length} поз. (${totalQty} шт.)`;
+  totalItemsCount.textContent = `${grouped.length} тов. (${totalQty} шт.)`;
   grandTotalDisplay.textContent = formatMoney(grandTotal);
 }
+
+// Product History Modal (detailed additions with date/time)
+window.openProductHistoryModal = function(productId) {
+  const entries = purchaseHistory.filter(item => item.productId === productId);
+  if (entries.length === 0) return;
+
+  const productName = entries[0].productName;
+  const totalQty = entries.reduce((sum, e) => sum + e.qty, 0);
+  const totalPrice = entries.reduce((sum, e) => sum + e.total, 0);
+
+  itemHistoryModalTitle.textContent = productName;
+  itemHistoryModalSubtitle.textContent = `Всего: ${totalQty} шт. на сумму ${formatMoney(totalPrice)} (${entries.length} доб.)`;
+
+  productHistoryLogsList.innerHTML = '';
+  entries.forEach(entry => {
+    const { date, time } = formatDateTime(entry.timestamp);
+    const li = document.createElement('li');
+    li.className = 'history-log-item';
+    li.innerHTML = `
+      <div class="log-info">
+        <div class="log-time-row">
+          <span class="log-date">📅 ${date}</span>
+          <span class="log-time">🕒 ${time}</span>
+        </div>
+        <div class="log-calc">${formatMoney(entry.unitPrice)} × ${entry.qty} шт. = <strong>${formatMoney(entry.total)}</strong></div>
+      </div>
+      <div class="log-actions">
+        <span class="log-qty-badge">+${entry.qty} шт.</span>
+        <button class="btn-icon-delete" title="Удалить это добавление" onclick="removeSingleLogEntry('${entry.id}', '${entry.productId}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    `;
+    productHistoryLogsList.appendChild(li);
+  });
+
+  productHistoryModal.classList.add('active');
+  productHistoryModal.setAttribute('aria-hidden', 'false');
+};
+
+function closeProductHistoryModal() {
+  productHistoryModal.classList.remove('active');
+  productHistoryModal.setAttribute('aria-hidden', 'true');
+}
+
+// Remove single log entry
+window.removeSingleLogEntry = function(logId, productId) {
+  const entryIdx = purchaseHistory.findIndex(e => e.id === logId);
+  if (entryIdx === -1) return;
+
+  const removed = purchaseHistory[entryIdx];
+  purchaseHistory.splice(entryIdx, 1);
+  saveState();
+  renderHistory();
+
+  const remaining = purchaseHistory.filter(e => e.productId === productId);
+  if (remaining.length > 0) {
+    openProductHistoryModal(productId);
+  } else {
+    closeProductHistoryModal();
+  }
+  showToast(`Удалена запись: -${removed.qty} шт.`);
+};
+
+// Remove entire product group from history
+window.removeGroupFromHistory = function(productId) {
+  const entries = purchaseHistory.filter(e => e.productId === productId);
+  const name = entries.length > 0 ? entries[0].productName : 'товар';
+  
+  if (confirm(`Удалить все добавления "${name}" из чека?`)) {
+    purchaseHistory = purchaseHistory.filter(e => e.productId !== productId);
+    saveState();
+    renderHistory();
+    closeProductHistoryModal();
+    showToast(`Товар "${name}" удален из чека`);
+  }
+};
 
 // Product Management (CRUD)
 window.editProduct = function(id) {
@@ -325,7 +452,7 @@ function handleAddPurchase(e) {
 
   const total = selected.price * qty;
   const historyEntry = {
-    id: 'item_' + Date.now(),
+    id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
     productId: selected.id,
     productName: selected.name,
     unitPrice: selected.price,
@@ -337,31 +464,21 @@ function handleAddPurchase(e) {
   purchaseHistory.unshift(historyEntry);
   saveState();
   renderHistory();
-  showToast(`Добавлено: ${selected.name} (${qty} шт.)`);
+  showToast(`Добавлено: ${selected.name} (+${qty} шт.)`);
 
   // Reset quantity back to 1
   qtyInput.value = '1';
   updateSubtotal();
 }
 
-// Remove from history
-window.removeFromHistory = function(index) {
-  const removed = purchaseHistory[index];
-  purchaseHistory.splice(index, 1);
-  saveState();
-  renderHistory();
-  if (removed) {
-    showToast(`Удалено: ${removed.productName}`);
-  }
-};
-
-// Clear history
+// Clear entire history
 function handleClearHistory() {
   if (purchaseHistory.length === 0) return;
   if (confirm('Очистить всю историю текущей закупки?')) {
     purchaseHistory = [];
     saveState();
     renderHistory();
+    closeProductHistoryModal();
     showToast('История закупки очищена');
   }
 }
@@ -370,12 +487,13 @@ function handleClearHistory() {
 function handleCopyReceipt() {
   if (purchaseHistory.length === 0) return;
 
+  const grouped = getGroupedHistory();
   let text = '🧾 ЧЕК ЗАКУПКИ\n';
   text += '-------------------------------\n';
   let total = 0;
-  purchaseHistory.forEach((item, idx) => {
-    text += `${idx + 1}. ${item.productName}\n   ${formatMoney(item.unitPrice)} × ${item.qty} = ${formatMoney(item.total)}\n`;
-    total += item.total;
+  grouped.forEach((item, idx) => {
+    text += `${idx + 1}. ${item.productName}\n   ${item.totalQty} шт. × ${formatMoney(item.unitPrice)} = ${formatMoney(item.totalPrice)}\n`;
+    total += item.totalPrice;
   });
   text += '-------------------------------\n';
   text += `ИТОГО К ОПЛАТЕ: ${formatMoney(total)}\n`;
@@ -434,10 +552,13 @@ document.addEventListener('DOMContentLoaded', () => {
   clearHistoryBtn.addEventListener('click', handleClearHistory);
   copyReceiptBtn.addEventListener('click', handleCopyReceipt);
 
-  // Modal open/close
+  // Catalog Modal open/close
   openCatalogBtn.addEventListener('click', openModal);
   quickAddProductBtn.addEventListener('click', openModal);
   closeCatalogBtn.addEventListener('click', closeModal);
+
+  // Product History Modal close
+  closeProductHistoryBtn.addEventListener('click', closeProductHistoryModal);
 
   catalogModal.addEventListener('click', (e) => {
     if (e.target === catalogModal) {
@@ -445,9 +566,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  productHistoryModal.addEventListener('click', (e) => {
+    if (e.target === productHistoryModal) {
+      closeProductHistoryModal();
+    }
+  });
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && catalogModal.classList.contains('active')) {
-      closeModal();
+    if (e.key === 'Escape') {
+      if (catalogModal.classList.contains('active')) closeModal();
+      if (productHistoryModal.classList.contains('active')) closeProductHistoryModal();
     }
   });
 });
