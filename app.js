@@ -83,13 +83,13 @@ const defaultProductsAli = [
 ];
 
 const defaultProductsRavshan = [
-  { id: 'rav_sbor50', name: 'Сборка 50р', price: 50 },
-  { id: 'rav_sbor150', name: 'Сборка 150р', price: 150 },
-  { id: 'rav_sbor200', name: 'Сборка 200р', price: 200 },
-  { id: 'rav_dost150', name: 'Доставка 150р', price: 150 },
-  { id: 'rav_dost300', name: 'Доставка 300р', price: 300 },
-  { id: 'rav_dost450', name: 'доставка 450р', price: 450 },
-  { id: 'rav_dost600', name: 'Доставка 600р', price: 600 }
+  { id: 'rav_sbor50', name: 'Сборка', price: 50 },
+  { id: 'rav_sbor150', name: 'Сборка', price: 150 },
+  { id: 'rav_sbor200', name: 'Сборка', price: 200 },
+  { id: 'rav_dost150', name: 'Доставка', price: 150 },
+  { id: 'rav_dost300', name: 'Доставка', price: 300 },
+  { id: 'rav_dost450', name: 'Доставка', price: 450 },
+  { id: 'rav_dost600', name: 'Доставка', price: 600 }
 ];
 
 // Profile storage keys & meta
@@ -135,6 +135,14 @@ function loadState() {
       purchaseHistory = [];
     }
 
+    // Clean Ravshan names in history
+    if (currentMode === 'ravshan') {
+      purchaseHistory.forEach(item => {
+        if (item.productName && item.productName.toLowerCase().startsWith('сборка')) item.productName = 'Сборка';
+        if (item.productName && item.productName.toLowerCase().startsWith('доставка')) item.productName = 'Доставка';
+      });
+    }
+
     // 2. Load Products
     const savedProducts = localStorage.getItem(productsKey);
     if (savedProducts) {
@@ -142,9 +150,16 @@ function loadState() {
       if (!Array.isArray(products) || products.length === 0) {
         products = [...defaultProducts];
       } else {
-        // Merge missing default products by name
+        // Clean Ravshan names in products catalog
+        if (currentMode === 'ravshan') {
+          products.forEach(p => {
+            if (p.name && p.name.toLowerCase().startsWith('сборка')) p.name = 'Сборка';
+            if (p.name && p.name.toLowerCase().startsWith('доставка')) p.name = 'Доставка';
+          });
+        }
+        // Merge missing default products
         defaultProducts.forEach(def => {
-          if (!products.some(p => p.name.trim().toLowerCase() === def.name.trim().toLowerCase())) {
+          if (!products.some(p => p.id === def.id || (p.name.trim().toLowerCase() === def.name.trim().toLowerCase() && p.price === def.price))) {
             products.push({ ...def });
           }
         });
