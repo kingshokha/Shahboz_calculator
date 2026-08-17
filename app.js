@@ -6,6 +6,7 @@ let purchaseHistory = [];
 
 // DOM Elements
 const productSelect = document.getElementById('productSelect');
+const purchaseDateInput = document.getElementById('purchaseDateInput');
 const unitPriceDisplay = document.getElementById('unitPriceDisplay');
 const qtyInput = document.getElementById('qtyInput');
 const btnMinus = document.getElementById('btnMinus');
@@ -472,6 +473,16 @@ function handleProductFormSubmit(e) {
   renderProducts();
 }
 
+// Helper to set today's date in date input
+function setTodayDate() {
+  if (!purchaseDateInput) return;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  purchaseDateInput.value = `${year}-${month}-${day}`;
+}
+
 // Add Item to History
 function handleAddPurchase(e) {
   e.preventDefault();
@@ -488,6 +499,19 @@ function handleAddPurchase(e) {
   }
 
   const total = selected.price * qty;
+
+  // Build timestamp from selected date and current time
+  const selectedDateVal = purchaseDateInput ? purchaseDateInput.value : '';
+  let timestamp;
+  if (selectedDateVal) {
+    const now = new Date();
+    const [y, m, d] = selectedDateVal.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds());
+    timestamp = dateObj.toISOString();
+  } else {
+    timestamp = new Date().toISOString();
+  }
+
   const historyEntry = {
     id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
     productId: selected.id,
@@ -495,7 +519,7 @@ function handleAddPurchase(e) {
     unitPrice: selected.price,
     qty: qty,
     total: total,
-    timestamp: new Date().toISOString()
+    timestamp: timestamp
   };
 
   purchaseHistory.unshift(historyEntry);
@@ -619,6 +643,7 @@ function closeModal() {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
+  setTodayDate();
   renderProducts();
   renderHistory();
 

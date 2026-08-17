@@ -203,11 +203,16 @@ label {
   font-family: inherit;
   outline: none;
   transition: var(--transition);
+  color-scheme: dark;
 }
 
 .form-select:focus, .form-input:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.date-input {
+  cursor: pointer;
 }
 
 .price-preview-row {
