@@ -391,6 +391,20 @@ label {
   background-color: var(--primary-hover);
 }
 
+.btn-whatsapp {
+  background-color: #25d366;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.btn-whatsapp:hover {
+  background-color: #1ebe57;
+}
+
+.btn-whatsapp svg {
+  flex-shrink: 0;
+}
+
 .btn-secondary {
   background-color: var(--bg-card-subtle);
   color: var(--text-main);

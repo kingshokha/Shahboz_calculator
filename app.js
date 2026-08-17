@@ -18,7 +18,7 @@ const emptyHistoryState = document.getElementById('emptyHistoryState');
 const totalItemsCount = document.getElementById('totalItemsCount');
 const grandTotalDisplay = document.getElementById('grandTotalDisplay');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-const copyReceiptBtn = document.getElementById('copyReceiptBtn');
+const sendWhatsAppBtn = document.getElementById('sendWhatsAppBtn');
 const catalogCountBadge = document.getElementById('catalogCountBadge');
 
 // Catalog Modal Elements
@@ -268,7 +268,7 @@ function renderHistory() {
   if (purchaseHistory.length === 0) {
     emptyHistoryState.style.display = 'flex';
     clearHistoryBtn.style.display = 'none';
-    copyReceiptBtn.style.display = 'none';
+    if (sendWhatsAppBtn) sendWhatsAppBtn.style.display = 'none';
     if (totalItemsCount) totalItemsCount.textContent = '0 поз.';
     grandTotalDisplay.textContent = '0 ₽';
     return;
@@ -276,7 +276,7 @@ function renderHistory() {
 
   emptyHistoryState.style.display = 'none';
   clearHistoryBtn.style.display = 'inline-flex';
-  copyReceiptBtn.style.display = 'inline-flex';
+  if (sendWhatsAppBtn) sendWhatsAppBtn.style.display = 'inline-flex';
 
   const grouped = getGroupedHistory();
   let grandTotal = 0;
@@ -544,9 +544,9 @@ function handleClearHistory() {
   }
 }
 
-// Copy Receipt with date grouping
-function handleCopyReceipt() {
-  if (purchaseHistory.length === 0) return;
+// Generate Receipt Text (grouped by date)
+function generateReceiptText() {
+  if (purchaseHistory.length === 0) return '';
 
   // Group entries by date
   const dateGroups = new Map();
@@ -619,12 +619,24 @@ function handleCopyReceipt() {
 
   text += '-------------------------------\n';
   text += `ИТОГО К ОПЛАТЕ: ${formatMoney(grandTotal)}`;
+  return text;
+}
 
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('Чек скопирован в буфер обмена!');
-  }).catch(() => {
-    showToast('Не удалось скопировать чек');
-  });
+// Send to WhatsApp
+function handleSendWhatsApp() {
+  const text = generateReceiptText();
+  if (!text) return;
+
+  // Copy to clipboard in background as backup
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+
+  showToast('Открываем WhatsApp...');
+
+  // Open WhatsApp with prefilled message
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  window.open(waUrl, '_blank');
 }
 
 // Modal handling
@@ -672,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
   productForm.addEventListener('submit', handleProductFormSubmit);
   cancelEditBtn.addEventListener('click', resetProductForm);
   clearHistoryBtn.addEventListener('click', handleClearHistory);
-  copyReceiptBtn.addEventListener('click', handleCopyReceipt);
+  if (sendWhatsAppBtn) sendWhatsAppBtn.addEventListener('click', handleSendWhatsApp);
 
   // Catalog Modal open/close
   openCatalogBtn.addEventListener('click', openModal);
