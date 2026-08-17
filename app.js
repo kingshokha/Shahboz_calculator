@@ -61,17 +61,48 @@ function formatDateTime(isoString) {
   return { date, time };
 }
 
+// Default Initial Catalog
+const defaultProducts = [
+  { id: 'prod_joystick', name: 'Джойстик', price: 450 },
+  { id: 'prod_air4', name: 'Аир 4', price: 400 },
+  { id: 'prod_pro2', name: 'Про 2', price: 400 },
+  { id: 'prod_straightener_case', name: 'Выпрямитель с кейсом', price: 3900 },
+  { id: 'prod_magsafe', name: 'Magsafe', price: 120 },
+  { id: 'prod_case_headphones', name: 'Чехол наушники', price: 50 },
+  { id: 'prod_straightener_nologo', name: 'Выпрямитель без лого', price: 2000 },
+  { id: 'prod_120w', name: '120в', price: 140 },
+  { id: 'prod_45w', name: '45в', price: 170 },
+  { id: 'prod_200w', name: '200в', price: 230 },
+  { id: 'prod_67w', name: '67в', price: 130 },
+  { id: 'prod_33w', name: '33в', price: 120 }
+];
+
 // LocalStorage helpers
 function loadState() {
   try {
     const savedProducts = localStorage.getItem('shahboz_products');
-    products = savedProducts ? JSON.parse(savedProducts) : [];
+    if (savedProducts) {
+      products = JSON.parse(savedProducts);
+      if (!Array.isArray(products) || products.length === 0) {
+        products = [...defaultProducts];
+      } else {
+        // Merge missing default products by name
+        defaultProducts.forEach(def => {
+          if (!products.some(p => p.name.trim().toLowerCase() === def.name.trim().toLowerCase())) {
+            products.push({ ...def });
+          }
+        });
+      }
+    } else {
+      products = [...defaultProducts];
+    }
+    saveState();
 
     const savedHistory = localStorage.getItem('shahboz_history');
     purchaseHistory = savedHistory ? JSON.parse(savedHistory) : [];
   } catch (e) {
     console.error('Error loading state from localStorage:', e);
-    products = [];
+    products = [...defaultProducts];
     purchaseHistory = [];
   }
 }
