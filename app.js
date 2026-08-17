@@ -80,6 +80,16 @@ const defaultProducts = [
 // LocalStorage helpers
 function loadState() {
   try {
+    // 1. Load History first
+    const savedHistory = localStorage.getItem('shahboz_history');
+    if (savedHistory) {
+      const parsedHistory = JSON.parse(savedHistory);
+      purchaseHistory = Array.isArray(parsedHistory) ? parsedHistory : [];
+    } else {
+      purchaseHistory = [];
+    }
+
+    // 2. Load Products
     const savedProducts = localStorage.getItem('shahboz_products');
     if (savedProducts) {
       products = JSON.parse(savedProducts);
@@ -96,10 +106,9 @@ function loadState() {
     } else {
       products = [...defaultProducts];
     }
-    saveState();
 
-    const savedHistory = localStorage.getItem('shahboz_history');
-    purchaseHistory = savedHistory ? JSON.parse(savedHistory) : [];
+    // 3. Save combined state safely
+    saveState();
   } catch (e) {
     console.error('Error loading state from localStorage:', e);
     products = [...defaultProducts];
