@@ -1,10 +1,14 @@
 // Shahboz Calculator - State Management & Logic
 
 // State
+let currentMode = localStorage.getItem('shahboz_active_mode') || 'ali';
 let products = [];
 let purchaseHistory = [];
 
 // DOM Elements
+const switchModeBtn = document.getElementById('switchModeBtn');
+const switchModeBtnText = document.getElementById('switchModeBtnText');
+const calcCardTitle = document.getElementById('calcCardTitle');
 const productSelect = document.getElementById('productSelect');
 const purchaseDateInput = document.getElementById('purchaseDateInput');
 const unitPriceDisplay = document.getElementById('unitPriceDisplay');
@@ -62,8 +66,8 @@ function formatDateTime(isoString) {
   return { date, time };
 }
 
-// Default Initial Catalog
-const defaultProducts = [
+// Default Catalogs for Profiles
+const defaultProductsAli = [
   { id: 'prod_joystick', name: 'Джойстик', price: 450 },
   { id: 'prod_air4', name: 'Аир 4', price: 400 },
   { id: 'prod_pro2', name: 'Про 2', price: 400 },
@@ -78,11 +82,52 @@ const defaultProducts = [
   { id: 'prod_33w', name: '33в', price: 120 }
 ];
 
+const defaultProductsRavshan = [
+  { id: 'rav_sbor50', name: 'Сборка 50р', price: 50 },
+  { id: 'rav_sbor150', name: 'Сборка 150р', price: 150 },
+  { id: 'rav_sbor200', name: 'Сборка 200р', price: 200 },
+  { id: 'rav_dost150', name: 'Доставка 150р', price: 150 },
+  { id: 'rav_dost300', name: 'Доставка 300р', price: 300 },
+  { id: 'rav_dost450', name: 'доставка 450р', price: 450 },
+  { id: 'rav_dost600', name: 'Доставка 600р', price: 600 }
+];
+
+// Profile storage keys & meta
+function getStorageKeys() {
+  if (currentMode === 'ravshan') {
+    return {
+      productsKey: 'shahboz_products_ravshan',
+      historyKey: 'shahboz_history_ravshan',
+      defaultProducts: defaultProductsRavshan,
+      modeName: 'Равшан ФБС',
+      nextModeName: 'Али ФБС'
+    };
+  } else {
+    return {
+      productsKey: 'shahboz_products_ali',
+      historyKey: 'shahboz_history_ali',
+      defaultProducts: defaultProductsAli,
+      modeName: 'Али ФБС',
+      nextModeName: 'Равшан ФБС'
+    };
+  }
+}
+
 // LocalStorage helpers
 function loadState() {
   try {
+    // Migration from old keys
+    if (!localStorage.getItem('shahboz_products_ali') && localStorage.getItem('shahboz_products')) {
+      localStorage.setItem('shahboz_products_ali', localStorage.getItem('shahboz_products'));
+    }
+    if (!localStorage.getItem('shahboz_history_ali') && localStorage.getItem('shahboz_history')) {
+      localStorage.setItem('shahboz_history_ali', localStorage.getItem('shahboz_history'));
+    }
+
+    const { productsKey, historyKey, defaultProducts } = getStorageKeys();
+
     // 1. Load History first
-    const savedHistory = localStorage.getItem('shahboz_history');
+    const savedHistory = localStorage.getItem(historyKey);
     if (savedHistory) {
       const parsedHistory = JSON.parse(savedHistory);
       purchaseHistory = Array.isArray(parsedHistory) ? parsedHistory : [];
@@ -91,7 +136,7 @@ function loadState() {
     }
 
     // 2. Load Products
-    const savedProducts = localStorage.getItem('shahboz_products');
+    const savedProducts = localStorage.getItem(productsKey);
     if (savedProducts) {
       products = JSON.parse(savedProducts);
       if (!Array.isArray(products) || products.length === 0) {
@@ -108,10 +153,11 @@ function loadState() {
       products = [...defaultProducts];
     }
 
-    // 3. Save combined state safely
+    // 3. Save state safely
     saveState();
   } catch (e) {
     console.error('Error loading state from localStorage:', e);
+    const { defaultProducts } = getStorageKeys();
     products = [...defaultProducts];
     purchaseHistory = [];
   }
@@ -119,11 +165,30 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem('shahboz_products', JSON.stringify(products));
-    localStorage.setItem('shahboz_history', JSON.stringify(purchaseHistory));
+    const { productsKey, historyKey } = getStorageKeys();
+    localStorage.setItem(productsKey, JSON.stringify(products));
+    localStorage.setItem(historyKey, JSON.stringify(purchaseHistory));
   } catch (e) {
     console.error('Error saving state to localStorage:', e);
   }
+}
+
+function updateModeUI() {
+  const { nextModeName } = getStorageKeys();
+  if (switchModeBtnText) {
+    switchModeBtnText.textContent = nextModeName;
+  }
+}
+
+function toggleMode() {
+  currentMode = (currentMode === 'ali') ? 'ravshan' : 'ali';
+  localStorage.setItem('shahboz_active_mode', currentMode);
+  loadState();
+  updateModeUI();
+  renderProducts();
+  renderHistory();
+  const { modeName } = getStorageKeys();
+  showToast(`Режим переключен: ${modeName}`);
 }
 
 // Show Toast notification
@@ -594,7 +659,8 @@ function generateReceiptText() {
     return new Date(a.firstTimestamp) - new Date(b.firstTimestamp);
   });
 
-  let text = '🧾 ЧЕК ЗАКУПКИ\n';
+  const { modeName } = getStorageKeys();
+  let text = `🧾 ЧЕК ЗАКУПКИ (${modeName})\n`;
   text += '-------------------------------\n';
   let grandTotal = 0;
 
@@ -655,9 +721,15 @@ function closeModal() {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
+  updateModeUI();
   setTodayDate();
   renderProducts();
   renderHistory();
+
+  // Mode Switch
+  if (switchModeBtn) {
+    switchModeBtn.addEventListener('click', toggleMode);
+  }
 
   // Dropdown Change
   productSelect.addEventListener('change', updateSubtotal);

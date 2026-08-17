@@ -17,15 +17,20 @@
       <!-- Calculator Card -->
       <section class="card calculator-card">
         <div class="card-header space-between">
-          <h2 class="card-title">Новая позиция</h2>
-          <button id="openCatalogBtn" class="btn btn-outline btn-sm" title="Управление товарами">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-            <span class="btn-text">Каталог</span>
-            <span id="catalogCountBadge" class="badge">0</span>
-          </button>
+          <h2 class="card-title" id="calcCardTitle">Новая позиция</h2>
+          <div class="header-actions">
+            <button type="button" id="switchModeBtn" class="btn btn-mode-switch btn-sm" title="Сменить профиль">
+              <span id="switchModeBtnText">Равшан ФБС</span>
+            </button>
+            <button type="button" id="openCatalogBtn" class="btn btn-outline btn-sm" title="Управление товарами">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span class="btn-text">Каталог</span>
+              <span id="catalogCountBadge" class="badge">0</span>
+            </button>
+          </div>
         </div>
 
         <form id="addPurchaseForm" class="calc-form" onsubmit="return false;">
