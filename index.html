@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Shahboz Calculator — Калькулятор закупок</title>
+  <meta name="description" content="Удобный и быстрый калькулятор для подсчета закупок с каталогом товаров и историей.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="app-title">Shahboz Calculator</h1>
+          <p class="app-subtitle">Учёт и подсчёт закупок</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="openCatalogBtn" class="btn btn-outline" title="Управление товарами">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span class="btn-text">Товары</span>
+          <span id="catalogCountBadge" class="badge">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-layout">
+      <!-- Calculator Card -->
+      <section class="card calculator-card">
+        <div class="card-header">
+          <h2 class="card-title">Новая позиция</h2>
+        </div>
+
+        <form id="addPurchaseForm" class="calc-form" onsubmit="return false;">
+          <!-- Product Dropdown -->
+          <div class="form-group">
+            <div class="label-row">
+              <label for="productSelect">Выберите товар</label>
+              <button type="button" id="quickAddProductBtn" class="link-btn">+ Добавить в каталог</button>
+            </div>
+            <div class="select-wrapper">
+              <select id="productSelect" class="form-select" required>
+                <option value="" disabled selected>— Каталог пуст, добавьте товар —</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Price Preview -->
+          <div class="price-preview-row">
+            <span class="price-label">Цена за ед.:</span>
+            <span id="unitPriceDisplay" class="unit-price">0 ₽</span>
+          </div>
+
+          <!-- Quantity Selector with [-] and [+] -->
+          <div class="form-group">
+            <label for="qtyInput">Количество</label>
+            <div class="qty-control-group">
+              <button type="button" id="btnMinus" class="qty-btn qty-btn-minus" aria-label="Уменьшить количество">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              
+              <input type="number" id="qtyInput" class="qty-input" min="1" step="1" value="1" inputmode="numeric" required>
+              
+              <button type="button" id="btnPlus" class="qty-btn qty-btn-plus" aria-label="Увеличить количество">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Item Subtotal preview -->
+          <div class="subtotal-box">
+            <span>Сумма позиции:</span>
+            <strong id="itemSubtotalDisplay">0 ₽</strong>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="addToListBtn" class="btn btn-primary btn-block">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Добавить в чек
+          </button>
+        </form>
+      </section>
+
+      <!-- History & Summary Card -->
+      <section class="card history-card">
+        <div class="card-header space-between">
+          <div>
+            <h2 class="card-title">История добавления</h2>
+            <p class="card-subtitle">Текущая закупка</p>
+          </div>
+          <button id="clearHistoryBtn" class="btn btn-ghost text-danger" title="Очистить всю историю" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Очистить
+          </button>
+        </div>
+
+        <!-- History List Container -->
+        <div class="history-scroll" id="historyContainer">
+          <div class="empty-state" id="emptyHistoryState">
+            <div class="empty-icon">🛒</div>
+            <p class="empty-title">Список покупок пуст</p>
+            <p class="empty-desc">Выберите товар и укажите количество, чтобы добавить его в расчёт</p>
+          </div>
+          <ul id="historyList" class="history-list"></ul>
+        </div>
+
+        <!-- Grand Total Footer -->
+        <div class="total-summary-container">
+          <div class="total-row">
+            <span class="total-items-count" id="totalItemsCount">0 поз.</span>
+            <span class="total-label">ИТОГО К ОПЛАТЕ:</span>
+          </div>
+          <div class="grand-total" id="grandTotalDisplay">0 ₽</div>
+          
+          <button id="copyReceiptBtn" class="btn btn-secondary btn-block" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Скопировать чек
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Product Catalog Modal -->
+  <div id="catalogModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Каталог товаров</h3>
+        <button id="closeCatalogBtn" class="btn-close" aria-label="Закрыть">×</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Form to Add/Edit Product -->
+        <form id="productForm" class="product-form" onsubmit="return false;">
+          <input type="hidden" id="editingProductId" value="">
+          <div class="product-form-inputs">
+            <div class="form-group flex-1">
+              <label for="newProductName">Название товара</label>
+              <input type="text" id="newProductName" placeholder="Например: Сахар 1кг" class="form-input" required>
+            </div>
+            <div class="form-group width-price">
+              <label for="newProductPrice">Цена (₽)</label>
+              <input type="number" id="newProductPrice" placeholder="0" min="0" step="any" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-actions-row">
+            <button type="submit" id="saveProductBtn" class="btn btn-primary">
+              <span id="saveProductBtnText">Добавить товар</span>
+            </button>
+            <button type="button" id="cancelEditBtn" class="btn btn-ghost" style="display: none;">Отмена</button>
+          </div>
+        </form>
+
+        <hr class="modal-divider">
+
+        <!-- Products List in Modal -->
+        <h4 class="catalog-list-title">Список ваших товаров</h4>
+        <div id="catalogListContainer" class="catalog-items-container">
+          <div class="empty-state small" id="emptyCatalogState">
+            <p>В каталоге пока нет товаров.<br>Создайте свой первый товар выше 👆</p>
+          </div>
+          <ul id="catalogProductsList" class="catalog-list"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
