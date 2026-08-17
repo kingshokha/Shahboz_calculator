@@ -251,10 +251,7 @@ function renderHistory() {
     li.onclick = () => openProductHistoryModal(item.productId);
     li.innerHTML = `
       <div class="item-info">
-        <div class="item-title-row">
-          <span class="item-title">${escapeHtml(item.productName)}</span>
-          ${item.entriesCount > 1 ? `<span class="badge-count">${item.entriesCount} доб.</span>` : ''}
-        </div>
+        <span class="item-title">${escapeHtml(item.productName)}</span>
         <span class="item-calc-details">${formatMoney(item.unitPrice)} × ${item.totalQty} шт.</span>
       </div>
       <div class="item-actions-group">
@@ -284,7 +281,7 @@ window.openProductHistoryModal = function(productId) {
   const totalPrice = entries.reduce((sum, e) => sum + e.total, 0);
 
   itemHistoryModalTitle.textContent = productName;
-  itemHistoryModalSubtitle.textContent = `Всего: ${totalQty} шт. на сумму ${formatMoney(totalPrice)} (${entries.length} доб.)`;
+  itemHistoryModalSubtitle.textContent = `Всего: ${totalQty} шт. на сумму ${formatMoney(totalPrice)}`;
 
   productHistoryLogsList.innerHTML = '';
   entries.forEach(entry => {
