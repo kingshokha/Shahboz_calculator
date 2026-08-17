@@ -520,21 +520,81 @@ function handleClearHistory() {
   }
 }
 
-// Copy Receipt
+// Copy Receipt with date grouping
 function handleCopyReceipt() {
   if (purchaseHistory.length === 0) return;
 
-  const grouped = getGroupedHistory();
+  // Group entries by date
+  const dateGroups = new Map();
+
+  purchaseHistory.forEach(entry => {
+    let dateStr = '';
+    let dateShort = '';
+    if (entry.timestamp) {
+      const d = new Date(entry.timestamp);
+      dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      dateShort = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    } else {
+      const d = new Date();
+      dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      dateShort = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    }
+
+    if (!dateGroups.has(dateStr)) {
+      dateGroups.set(dateStr, {
+        dateStr,
+        dateShort,
+        productsMap: new Map(),
+        firstTimestamp: entry.timestamp || new Date().toISOString()
+      });
+    }
+
+    const dayGroup = dateGroups.get(dateStr);
+    if (!dayGroup.productsMap.has(entry.productId)) {
+      dayGroup.productsMap.set(entry.productId, {
+        productId: entry.productId,
+        productName: entry.productName,
+        unitPrice: entry.unitPrice,
+        totalQty: 0,
+        totalPrice: 0
+      });
+    }
+
+    const prod = dayGroup.productsMap.get(entry.productId);
+    prod.totalQty += entry.qty;
+    prod.totalPrice += entry.total;
+  });
+
+  // Sort dates chronologically
+  const sortedDates = Array.from(dateGroups.values()).sort((a, b) => {
+    return new Date(a.firstTimestamp) - new Date(b.firstTimestamp);
+  });
+
   let text = '🧾 ЧЕК ЗАКУПКИ\n';
   text += '-------------------------------\n';
-  let total = 0;
-  grouped.forEach((item, idx) => {
-    text += `${idx + 1}. ${item.productName}\n   ${item.totalQty} шт. × ${formatMoney(item.unitPrice)} = ${formatMoney(item.totalPrice)}\n`;
-    total += item.totalPrice;
+  let grandTotal = 0;
+
+  sortedDates.forEach((dayGroup, groupIdx) => {
+    text += `📅 ${dayGroup.dateStr}\n`;
+    let dayTotal = 0;
+    let itemIdx = 1;
+
+    dayGroup.productsMap.forEach(item => {
+      text += `${itemIdx}. ${item.productName} — ${item.totalQty} шт. × ${formatMoney(item.unitPrice)} = ${formatMoney(item.totalPrice)}\n`;
+      dayTotal += item.totalPrice;
+      itemIdx++;
+    });
+
+    text += `   Сумма за ${dayGroup.dateShort}: ${formatMoney(dayTotal)}\n`;
+    grandTotal += dayTotal;
+
+    if (groupIdx < sortedDates.length - 1) {
+      text += '\n';
+    }
   });
+
   text += '-------------------------------\n';
-  text += `ИТОГО К ОПЛАТЕ: ${formatMoney(total)}\n`;
-  text += `Дата: ${new Date().toLocaleString('ru-RU')}`;
+  text += `ИТОГО К ОПЛАТЕ: ${formatMoney(grandTotal)}`;
 
   navigator.clipboard.writeText(text).then(() => {
     showToast('Чек скопирован в буфер обмена!');
