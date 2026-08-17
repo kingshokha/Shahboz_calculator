@@ -95,7 +95,7 @@ function renderProducts() {
     defaultOption.selected = true;
     defaultOption.textContent = '— Каталог пуст, добавьте товар —';
     productSelect.appendChild(defaultOption);
-    unitPriceDisplay.textContent = '0 ₽';
+    if (unitPriceDisplay) unitPriceDisplay.textContent = '0 ₽';
   } else {
     const placeholderOption = document.createElement('option');
     placeholderOption.value = '';
@@ -170,11 +170,11 @@ function updateSubtotal() {
   const qty = parseFloat(qtyInput.value) || 0;
 
   if (selected) {
-    unitPriceDisplay.textContent = formatMoney(selected.price);
+    if (unitPriceDisplay) unitPriceDisplay.textContent = formatMoney(selected.price);
     const subtotal = selected.price * qty;
     itemSubtotalDisplay.textContent = formatMoney(subtotal);
   } else {
-    unitPriceDisplay.textContent = '0 ₽';
+    if (unitPriceDisplay) unitPriceDisplay.textContent = '0 ₽';
     itemSubtotalDisplay.textContent = '0 ₽';
   }
 }
