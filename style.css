@@ -235,6 +235,47 @@ label {
   cursor: pointer;
 }
 
+/* Date Control Group */
+.date-control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.date-nav-btn {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.date-nav-btn:hover {
+  background-color: #334155;
+  border-color: #475569;
+}
+
+.date-nav-btn:active {
+  transform: scale(0.94);
+}
+
+.date-control-group .date-input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  text-align: center;
+}
+
 .price-preview-row {
   display: flex;
   justify-content: space-between;
@@ -605,7 +646,7 @@ label {
 
 /* History Logs Modal List */
 .history-logs-container {
-  max-height: 350px;
+  max-height: 380px;
   overflow-y: auto;
   width: 100%;
 }
@@ -614,7 +655,7 @@ label {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -624,62 +665,149 @@ label {
   border-radius: var(--radius-md);
   padding: 12px 14px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   box-sizing: border-box;
+  transition: var(--transition);
 }
 
-.log-info {
+.history-log-item:hover {
+  border-color: #475569;
+}
+
+.log-main-col {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1;
+  gap: 8px;
+  width: 100%;
 }
 
-.log-time-row {
+.log-top-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  width: 100%;
 }
 
-.log-date {
-  font-weight: 600;
+.log-date-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.log-date-icon {
+  font-size: 0.95rem;
+}
+
+.log-date-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  font-family: inherit;
+  color-scheme: dark;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.log-date-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
 .log-time {
+  font-size: 0.775rem;
   color: #94a3b8;
 }
 
-.log-calc {
+.log-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.log-calc-info {
   font-size: 0.85rem;
   color: #cbd5e1;
 }
 
-.log-calc strong {
+.log-calc-total {
   color: #38bdf8;
+  font-weight: 700;
 }
 
-.log-actions {
+.log-qty-control {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 4px;
 }
 
-.log-qty-badge {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 3px 8px;
+.log-qty-btn {
+  background: #334155;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-sm);
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.log-qty-btn:hover {
+  background: #475569;
+  border-color: #64748b;
+}
+
+.log-qty-btn:active {
+  transform: scale(0.92);
+}
+
+.log-qty-input {
+  width: 46px;
+  height: 28px;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: inherit;
+  -moz-appearance: textfield;
+  outline: none;
+  transition: var(--transition);
+}
+
+.log-qty-input::-webkit-outer-spin-button,
+.log-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.log-qty-input:focus {
+  border-color: var(--border-focus);
+}
+
+.log-qty-unit {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 /* Empty State */

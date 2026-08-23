@@ -11,6 +11,8 @@ const switchModeBtnText = document.getElementById('switchModeBtnText');
 const calcCardTitle = document.getElementById('calcCardTitle');
 const productSelect = document.getElementById('productSelect');
 const purchaseDateInput = document.getElementById('purchaseDateInput');
+const btnDatePrev = document.getElementById('btnDatePrev');
+const btnDateNext = document.getElementById('btnDateNext');
 const unitPriceDisplay = document.getElementById('unitPriceDisplay');
 const qtyInput = document.getElementById('qtyInput');
 const btnMinus = document.getElementById('btnMinus');
@@ -48,22 +50,29 @@ const productHistoryLogsList = document.getElementById('productHistoryLogsList')
 
 const toast = document.getElementById('toast');
 
-// Format Currency
+// Format Currency (whole integer without ,00)
 function formatMoney(amount) {
-  return new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: 'RUB',
+  if (amount === undefined || amount === null || isNaN(amount)) return '0 ₽';
+  const num = Number(amount);
+  const isInteger = Number.isInteger(num) || (num % 1 === 0);
+  const formatted = new Intl.NumberFormat('ru-RU', {
+    minimumFractionDigits: isInteger ? 0 : 2,
     maximumFractionDigits: 2
-  }).format(amount).replace('₽', '').trim() + ' ₽';
+  }).format(num);
+  return `${formatted} ₽`;
 }
 
 // Format Date & Time
 function formatDateTime(isoString) {
-  if (!isoString) return { date: '', time: '' };
+  if (!isoString) return { date: '', time: '', isoDate: '' };
   const d = new Date(isoString);
   const date = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  return { date, time };
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const isoDate = `${year}-${month}-${day}`;
+  return { date, time, isoDate };
 }
 
 // Default Catalogs for Profiles
@@ -392,7 +401,7 @@ function renderHistory() {
   grandTotalDisplay.textContent = formatMoney(grandTotal);
 }
 
-// Product History Modal (detailed additions with date/time)
+// Product History Modal (detailed additions with editable date/time & quantity)
 window.openProductHistoryModal = function(productId) {
   const entries = purchaseHistory.filter(item => item.productId === productId);
   if (entries.length === 0) return;
@@ -406,25 +415,35 @@ window.openProductHistoryModal = function(productId) {
 
   productHistoryLogsList.innerHTML = '';
   entries.forEach(entry => {
-    const { date, time } = formatDateTime(entry.timestamp);
+    const { time, isoDate } = formatDateTime(entry.timestamp);
     const li = document.createElement('li');
     li.className = 'history-log-item';
     li.innerHTML = `
-      <div class="log-info">
-        <div class="log-time-row">
-          <span class="log-date">📅 ${date}</span>
-          <span class="log-time">🕒 ${time}</span>
+      <div class="log-main-col">
+        <div class="log-top-row">
+          <div class="log-date-control">
+            <span class="log-date-icon">📅</span>
+            <input type="date" class="log-date-input" value="${isoDate}" onchange="updateLogEntryDate('${entry.id}', '${entry.productId}', this.value)" title="Изменить дату">
+            <span class="log-time">🕒 ${time}</span>
+          </div>
+          <button class="btn-icon-delete" title="Удалить это добавление" onclick="removeSingleLogEntry('${entry.id}', '${entry.productId}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
-        <div class="log-calc">${formatMoney(entry.unitPrice)} × ${entry.qty} шт. = <strong>${formatMoney(entry.total)}</strong></div>
-      </div>
-      <div class="log-actions">
-        <span class="log-qty-badge">+${entry.qty} шт.</span>
-        <button class="btn-icon-delete" title="Удалить это добавление" onclick="removeSingleLogEntry('${entry.id}', '${entry.productId}')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <div class="log-bottom-row">
+          <div class="log-calc-info">
+            ${formatMoney(entry.unitPrice)} × ${entry.qty} шт. = <strong class="log-calc-total">${formatMoney(entry.total)}</strong>
+          </div>
+          <div class="log-qty-control">
+            <button type="button" class="log-qty-btn" title="Уменьшить на 1" onclick="changeLogQty('${entry.id}', '${entry.productId}', -1)">−</button>
+            <input type="number" class="log-qty-input" min="1" step="1" value="${entry.qty}" onchange="setLogQty('${entry.id}', '${entry.productId}', this.value)" title="Количество">
+            <button type="button" class="log-qty-btn" title="Увеличить на 1" onclick="changeLogQty('${entry.id}', '${entry.productId}', 1)">+</button>
+            <span class="log-qty-unit">шт.</span>
+          </div>
+        </div>
       </div>
     `;
     productHistoryLogsList.appendChild(li);
@@ -432,6 +451,56 @@ window.openProductHistoryModal = function(productId) {
 
   productHistoryModal.classList.add('active');
   productHistoryModal.setAttribute('aria-hidden', 'false');
+};
+
+// Update Date of a single log entry
+window.updateLogEntryDate = function(logId, productId, newDateVal) {
+  if (!newDateVal) return;
+  const entry = purchaseHistory.find(e => e.id === logId);
+  if (!entry) return;
+
+  const oldDate = entry.timestamp ? new Date(entry.timestamp) : new Date();
+  const [y, m, d] = newDateVal.split('-').map(Number);
+  const newDateObj = new Date(y, m - 1, d, oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds());
+  entry.timestamp = newDateObj.toISOString();
+
+  saveState();
+  renderHistory();
+  openProductHistoryModal(productId);
+  showToast('Дата записи обновлена');
+};
+
+// Change Quantity by delta (+1 / -1)
+window.changeLogQty = function(logId, productId, delta) {
+  const entry = purchaseHistory.find(e => e.id === logId);
+  if (!entry) return;
+
+  const currentQty = parseFloat(entry.qty) || 1;
+  const newQty = Math.max(1, currentQty + delta);
+  if (newQty === currentQty) return;
+
+  entry.qty = newQty;
+  entry.total = entry.unitPrice * newQty;
+
+  saveState();
+  renderHistory();
+  openProductHistoryModal(productId);
+};
+
+// Set Quantity directly
+window.setLogQty = function(logId, productId, rawVal) {
+  const entry = purchaseHistory.find(e => e.id === logId);
+  if (!entry) return;
+
+  let newQty = parseFloat(rawVal);
+  if (isNaN(newQty) || newQty < 1) newQty = 1;
+
+  entry.qty = newQty;
+  entry.total = entry.unitPrice * newQty;
+
+  saveState();
+  renderHistory();
+  openProductHistoryModal(productId);
 };
 
 function closeProductHistoryModal() {
@@ -560,6 +629,24 @@ function setTodayDate() {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
+  purchaseDateInput.value = `${year}-${month}-${day}`;
+}
+
+// Change date by +/- days
+function changePurchaseDate(daysDelta) {
+  if (!purchaseDateInput) return;
+  let val = purchaseDateInput.value;
+  let dateObj;
+  if (val) {
+    const [y, m, d] = val.split('-').map(Number);
+    dateObj = new Date(y, m - 1, d);
+  } else {
+    dateObj = new Date();
+  }
+  dateObj.setDate(dateObj.getDate() + daysDelta);
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
   purchaseDateInput.value = `${year}-${month}-${day}`;
 }
 
@@ -744,6 +831,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mode Switch
   if (switchModeBtn) {
     switchModeBtn.addEventListener('click', toggleMode);
+  }
+
+  // Date Prev / Next Buttons
+  if (btnDatePrev) {
+    btnDatePrev.addEventListener('click', () => changePurchaseDate(-1));
+  }
+  if (btnDateNext) {
+    btnDateNext.addEventListener('click', () => changePurchaseDate(1));
   }
 
   // Dropdown Change
