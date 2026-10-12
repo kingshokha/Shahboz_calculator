@@ -385,8 +385,8 @@ function getDateGroupedHistory() {
     dayGroup.totalQty += entry.qty;
   });
 
-  // Sort dates chronologically (oldest first, e.g. 14.08 then 15.08)
-  const sortedDateGroups = Array.from(dateMap.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  // Sort dates with newest first (descending, e.g. 15.08 then 14.08)
+  const sortedDateGroups = Array.from(dateMap.values()).sort((a, b) => b.dateKey.localeCompare(a.dateKey));
   return sortedDateGroups;
 }
 
@@ -496,7 +496,9 @@ function renderHistory() {
 
 // Product History Modal (detailed additions with editable date/time & quantity)
 window.openProductHistoryModal = function(productId) {
-  const entries = purchaseHistory.filter(item => item.productId === productId);
+  const entries = purchaseHistory
+    .filter(item => item.productId === productId)
+    .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
   if (entries.length === 0) return;
 
   const productName = entries[0].productName;
