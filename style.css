@@ -530,6 +530,63 @@ label {
   list-style: none;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.history-date-group {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  animation: slideIn 0.25s ease-out;
+}
+
+.history-date-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-left: 3px solid #3b82f6;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  box-sizing: border-box;
+}
+
+.date-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-header-icon {
+  font-size: 0.9rem;
+}
+
+.date-header-text {
+  font-weight: 700;
+  color: #93c5fd;
+  letter-spacing: 0.01em;
+}
+
+.date-header-subtotal {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
+.date-header-subtotal strong {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.date-group-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
   gap: 5px;
   width: 100%;
 }
@@ -544,7 +601,6 @@ label {
   align-items: center;
   gap: 8px;
   transition: var(--transition);
-  animation: slideIn 0.25s ease-out;
   box-sizing: border-box;
 }
 

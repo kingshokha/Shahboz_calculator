@@ -326,7 +326,71 @@ function updateSubtotal() {
   }
 }
 
-// Group Purchase History by Product (no duplicates)
+// Get Entry Date Key (YYYY-MM-DD)
+function getEntryDateKey(entry) {
+  if (!entry || !entry.timestamp) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  const d = new Date(entry.timestamp);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Group Purchase History by Date and Product
+function getDateGroupedHistory() {
+  const dateMap = new Map();
+
+  purchaseHistory.forEach(entry => {
+    const dateKey = getEntryDateKey(entry);
+    const [y, m, d] = dateKey.split('-');
+    const dateStr = `${d}.${m}.${y}`;
+    const dateShort = `${d}.${m}`;
+
+    if (!dateMap.has(dateKey)) {
+      dateMap.set(dateKey, {
+        dateKey,
+        dateStr,
+        dateShort,
+        firstTimestamp: entry.timestamp || new Date().toISOString(),
+        productsMap: new Map(),
+        totalPrice: 0,
+        totalQty: 0
+      });
+    }
+
+    const dayGroup = dateMap.get(dateKey);
+    if (!dayGroup.productsMap.has(entry.productId)) {
+      dayGroup.productsMap.set(entry.productId, {
+        productId: entry.productId,
+        productName: entry.productName,
+        unitPrice: entry.unitPrice,
+        totalQty: 0,
+        totalPrice: 0,
+        entries: []
+      });
+    }
+
+    const prod = dayGroup.productsMap.get(entry.productId);
+    prod.totalQty += entry.qty;
+    prod.totalPrice += entry.total;
+    prod.entries.push(entry);
+
+    dayGroup.totalPrice += entry.total;
+    dayGroup.totalQty += entry.qty;
+  });
+
+  // Sort dates chronologically (oldest first, e.g. 14.08 then 15.08)
+  const sortedDateGroups = Array.from(dateMap.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  return sortedDateGroups;
+}
+
+// Backward compatible helper
 function getGroupedHistory() {
   const groupsMap = new Map();
   purchaseHistory.forEach(item => {
@@ -350,7 +414,7 @@ function getGroupedHistory() {
   return Array.from(groupsMap.values());
 }
 
-// Render Purchase History & Grand Total
+// Render Purchase History & Grand Total with Date Breakdown
 function renderHistory() {
   historyList.innerHTML = '';
 
@@ -367,37 +431,66 @@ function renderHistory() {
   clearHistoryBtn.style.display = 'inline-flex';
   if (sendWhatsAppBtn) sendWhatsAppBtn.style.display = 'inline-flex';
 
-  const grouped = getGroupedHistory();
+  const dateGroups = getDateGroupedHistory();
   let grandTotal = 0;
   let totalQty = 0;
+  const uniqueProductIds = new Set();
 
-  grouped.forEach(item => {
-    grandTotal += item.totalPrice;
-    totalQty += item.totalQty;
+  dateGroups.forEach(dayGroup => {
+    grandTotal += dayGroup.totalPrice;
+    totalQty += dayGroup.totalQty;
 
-    const li = document.createElement('li');
-    li.className = 'history-item clickable';
-    li.title = 'Нажмите, чтобы посмотреть историю добавлений этого товара';
-    li.onclick = () => openProductHistoryModal(item.productId);
-    li.innerHTML = `
-      <div class="item-info">
-        <span class="item-title">${escapeHtml(item.productName)}</span>
-        <span class="item-calc-details">${formatMoney(item.unitPrice)} × ${item.totalQty} шт.</span>
+    const groupLi = document.createElement('li');
+    groupLi.className = 'history-date-group';
+
+    // Date Header
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'history-date-header';
+    headerDiv.innerHTML = `
+      <div class="date-header-left">
+        <span class="date-header-icon">📅</span>
+        <span class="date-header-text">${dayGroup.dateStr}</span>
       </div>
-      <div class="item-actions-group">
-        <span class="item-total-price">${formatMoney(item.totalPrice)}</span>
-        <button class="btn-icon-delete" title="Удалить из чека" onclick="event.stopPropagation(); removeGroupFromHistory('${item.productId}')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
+      <div class="date-header-subtotal">Сумма: <strong>${formatMoney(dayGroup.totalPrice)}</strong></div>
     `;
-    historyList.appendChild(li);
+    groupLi.appendChild(headerDiv);
+
+    // Items list for this date
+    const itemsUl = document.createElement('ul');
+    itemsUl.className = 'date-group-items';
+
+    dayGroup.productsMap.forEach(item => {
+      uniqueProductIds.add(item.productId);
+
+      const itemLi = document.createElement('li');
+      itemLi.className = 'history-item clickable';
+      itemLi.title = 'Нажмите, чтобы посмотреть историю добавлений этого товара';
+      itemLi.onclick = () => openProductHistoryModal(item.productId);
+      itemLi.innerHTML = `
+        <div class="item-info">
+          <span class="item-title">${escapeHtml(item.productName)}</span>
+          <span class="item-calc-details">${formatMoney(item.unitPrice)} × ${item.totalQty} шт.</span>
+        </div>
+        <div class="item-actions-group">
+          <span class="item-total-price">${formatMoney(item.totalPrice)}</span>
+          <button class="btn-icon-delete" title="Удалить из чека за этот день" onclick="event.stopPropagation(); removeProductFromDate('${item.productId}', '${dayGroup.dateKey}')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      `;
+      itemsUl.appendChild(itemLi);
+    });
+
+    groupLi.appendChild(itemsUl);
+    historyList.appendChild(groupLi);
   });
 
-  if (totalItemsCount) totalItemsCount.textContent = `${grouped.length} тов. (${totalQty} шт.)`;
+  if (totalItemsCount) {
+    totalItemsCount.textContent = `${uniqueProductIds.size} тов. (${totalQty} шт.)`;
+  }
   grandTotalDisplay.textContent = formatMoney(grandTotal);
 }
 
@@ -538,6 +631,24 @@ window.removeGroupFromHistory = function(productId) {
     renderHistory();
     closeProductHistoryModal();
     showToast(`Товар "${name}" удален из чека`);
+  }
+};
+
+// Remove product entries for a specific date
+window.removeProductFromDate = function(productId, dateKey) {
+  const entriesToDelete = purchaseHistory.filter(e => e.productId === productId && getEntryDateKey(e) === dateKey);
+  if (entriesToDelete.length === 0) return;
+
+  const name = entriesToDelete[0].productName;
+  const [y, m, d] = dateKey.split('-');
+  const dateFormatted = `${d}.${m}.${y}`;
+
+  if (confirm(`Удалить "${name}" за ${dateFormatted} из чека?`)) {
+    purchaseHistory = purchaseHistory.filter(e => !(e.productId === productId && getEntryDateKey(e) === dateKey));
+    saveState();
+    renderHistory();
+    closeProductHistoryModal();
+    showToast(`Товар "${name}" за ${dateFormatted} удален`);
   }
 };
 
@@ -715,52 +826,7 @@ function handleClearHistory() {
 function generateReceiptText() {
   if (purchaseHistory.length === 0) return '';
 
-  // Group entries by date
-  const dateGroups = new Map();
-
-  purchaseHistory.forEach(entry => {
-    let dateStr = '';
-    let dateShort = '';
-    if (entry.timestamp) {
-      const d = new Date(entry.timestamp);
-      dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      dateShort = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-    } else {
-      const d = new Date();
-      dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      dateShort = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-    }
-
-    if (!dateGroups.has(dateStr)) {
-      dateGroups.set(dateStr, {
-        dateStr,
-        dateShort,
-        productsMap: new Map(),
-        firstTimestamp: entry.timestamp || new Date().toISOString()
-      });
-    }
-
-    const dayGroup = dateGroups.get(dateStr);
-    if (!dayGroup.productsMap.has(entry.productId)) {
-      dayGroup.productsMap.set(entry.productId, {
-        productId: entry.productId,
-        productName: entry.productName,
-        unitPrice: entry.unitPrice,
-        totalQty: 0,
-        totalPrice: 0
-      });
-    }
-
-    const prod = dayGroup.productsMap.get(entry.productId);
-    prod.totalQty += entry.qty;
-    prod.totalPrice += entry.total;
-  });
-
-  // Sort dates chronologically
-  const sortedDates = Array.from(dateGroups.values()).sort((a, b) => {
-    return new Date(a.firstTimestamp) - new Date(b.firstTimestamp);
-  });
-
+  const sortedDates = getDateGroupedHistory();
   const { modeName } = getStorageKeys();
   let text = `🧾 ЧЕК ЗАКУПКИ (${modeName})\n`;
   text += '-------------------------------\n';
